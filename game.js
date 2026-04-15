@@ -51,6 +51,8 @@ function renderLeaderboard(el, lb, highlightScore) {
 let state = 'start'; // start | playing | dead | nameentry
 let bird, pipes, particles, score, frame;
 let flashTimer = 0;
+let shakeTimer = 0;
+let shakeIntensity = 0;
 const nameScreen    = document.getElementById('name-screen');
 const nameInput     = document.getElementById('name-input');
 const nameScoreEl   = document.getElementById('name-score');
@@ -248,12 +250,12 @@ function update() {
   }
 
   if (state === 'dead') {
-    // Bird falls off screen after death
     bird.vy += GRAVITY * 1.5;
     bird.y  += bird.vy;
     bird.angle = Math.min(bird.angle + 0.08, Math.PI / 2);
     updateParticles();
     if (flashTimer > 0) flashTimer--;
+    if (shakeTimer > 0) shakeTimer--;
     return;
   }
 
@@ -261,7 +263,7 @@ function update() {
 
   // Bird physics
   bird.vy += GRAVITY;
-  bird.vy  = Math.min(bird.vy, 12); // terminal velocity
+  bird.vy  = Math.min(bird.vy, 12);
   bird.y  += bird.vy;
 
   // Tilt bird based on velocity
@@ -274,6 +276,27 @@ function update() {
   bird.wingAngle += bird.wingDir * 0.18;
   if (bird.wingAngle >  0.5) bird.wingDir = -1;
   if (bird.wingAngle < -0.5) bird.wingDir =  1;
+
+  // ── Particle trail ──
+  if (frame % 2 === 0) {
+    const speed = Math.abs(bird.vy);
+    const t = Math.min(speed / 12, 1);
+    // Color shifts from cyan (slow) to orange (fast falling)
+    const r = Math.round(t * 255);
+    const g = Math.round((1 - t) * 180 + 80);
+    const b = Math.round((1 - t) * 255);
+    const color = `rgb(${r},${g},${b})`;
+    particles.push({
+      x: bird.x - Math.cos(bird.angle) * BIRD_RADIUS * 0.6,
+      y: bird.y - Math.sin(bird.angle) * BIRD_RADIUS * 0.6,
+      dx: (Math.random() - 0.5) * 0.6 - PIPE_SPEED * 0.3,
+      dy: (Math.random() - 0.5) * 0.6,
+      life: 14 + Math.random() * 8,
+      maxLife: 22,
+      r: 2.5 + Math.random() * 1.5,
+      color,
+    });
+  }
 
   // Spawn pipes
   if (frame % PIPE_INTERVAL === 0) pipes.push(createPipe());
@@ -315,6 +338,8 @@ function killBird() {
   bird.dead = true;
   state = 'dead';
   flashTimer = 8;
+  shakeTimer = 24;
+  shakeIntensity = 14;
   playDie();
   spawnParticles(bird.x, bird.y, '#ff4444', 14);
   spawnParticles(bird.x, bird.y, '#ffaa00', 8);
@@ -379,6 +404,17 @@ function draw() {
     return;
   }
 
+  // Screen shake
+  let sx = 0, sy = 0;
+  if (shakeTimer > 0) {
+    const s = (shakeTimer / 24) * shakeIntensity;
+    sx = (Math.random() - 0.5) * s;
+    sy = (Math.random() - 0.5) * s;
+    shakeTimer--;
+    ctx.save();
+    ctx.translate(sx, sy);
+  }
+
   // Sky gradient background
   const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
   skyGrad.addColorStop(0,   '#020818');
@@ -417,6 +453,9 @@ function draw() {
     ctx.fill();
     ctx.restore();
   }
+
+  // Restore shake transform
+  if (sx !== 0 || sy !== 0) ctx.restore();
 }
 
 // Procedural stars (seeded by position so they don't flicker)

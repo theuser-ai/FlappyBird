@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>FLAPPY BIRD</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="start-screen" class="screen">
+      <h1>FLAPPY<br>BIRD</h1>
+      <p class="version">VERSION 1.0</p>
+      <p class="subtitle">TAP OR PRESS SPACE TO FLAP</p>
+      <p class="blink start-prompt">TAP TO START</p>
+    </div>
+
+    <div id="score-display">0</div>
+
+    <div id="game-over-screen" class="screen hidden">
+      <h1>GAME<br>OVER</h1>
+      <p id="final-score"></p>
+      <p id="high-score"></p>
+      <p class="blink">TAP TO PLAY AGAIN</p>
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>

@@ -10,12 +10,12 @@ const highScoreEl  = document.getElementById('high-score');
 const startPrompt  = document.querySelector('.start-prompt');
 
 // ─── Constants ───
-const GRAVITY       = 0.38;
-const FLAP_FORCE    = -7.2;
-const PIPE_SPEED    = 2.8;
+const GRAVITY       = 0.28;
+const FLAP_FORCE    = -6.2;
+const PIPE_SPEED    = 2.0;
 const PIPE_WIDTH    = 64;
-const PIPE_GAP      = 200;   // vertical gap between pipes
-const PIPE_INTERVAL = 90;    // frames between new pipes
+const PIPE_GAP      = 260;   // vertical gap between pipes
+const PIPE_INTERVAL = 120;   // frames between new pipes
 const BIRD_RADIUS   = 16;
 
 // ─── State ───

@@ -14,17 +14,27 @@
 
     <div id="start-screen" class="screen">
       <h1>FLAPPY<br>BIRD</h1>
-      <p class="version">VERSION 2.0</p>
+      <p class="version">VERSION 3.0</p>
       <p class="subtitle">TAP OR PRESS SPACE TO FLAP</p>
+      <div id="leaderboard-preview"></div>
       <p class="blink start-prompt">TAP TO START</p>
     </div>
 
     <div id="score-display">0</div>
 
+    <!-- Name entry overlay -->
+    <div id="name-screen" class="screen hidden">
+      <h2>NEW HIGH SCORE!</h2>
+      <p id="name-score"></p>
+      <p class="subtitle">ENTER YOUR NAME</p>
+      <input id="name-input" type="text" maxlength="10" placeholder="YOUR NAME" autocomplete="off" autocorrect="off" spellcheck="false" />
+      <button id="name-submit">SUBMIT</button>
+    </div>
+
     <div id="game-over-screen" class="screen hidden">
       <h1>GAME<br>OVER</h1>
       <p id="final-score"></p>
-      <p id="high-score"></p>
+      <div id="leaderboard"></div>
       <p class="blink">TAP TO PLAY AGAIN</p>
     </div>
   </div>

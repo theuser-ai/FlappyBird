@@ -2,12 +2,11 @@
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const startScreen  = document.getElementById('start-screen');
+const startScreen    = document.getElementById('start-screen');
 const gameOverScreen = document.getElementById('game-over-screen');
-const scoreDisplay = document.getElementById('score-display');
-const finalScoreEl = document.getElementById('final-score');
-const highScoreEl  = document.getElementById('high-score');
-const startPrompt  = document.querySelector('.start-prompt');
+const scoreDisplay   = document.getElementById('score-display');
+const finalScoreEl   = document.getElementById('final-score');
+const startPrompt    = document.querySelector('.start-prompt');
 
 // ─── Constants ───
 const GRAVITY       = 0.28;
@@ -18,11 +17,44 @@ const PIPE_GAP      = 260;   // vertical gap between pipes
 const PIPE_INTERVAL = 120;   // frames between new pipes
 const BIRD_RADIUS   = 16;
 
+// ─── Leaderboard ───
+function loadLeaderboard() {
+  try { return JSON.parse(localStorage.getItem('flappy-leaderboard')) || []; }
+  catch(e) { return []; }
+}
+function saveLeaderboard(lb) {
+  localStorage.setItem('flappy-leaderboard', JSON.stringify(lb));
+}
+function addToLeaderboard(name, sc) {
+  const lb = loadLeaderboard();
+  lb.push({ name: name.toUpperCase().slice(0, 10) || 'BIRD', score: sc });
+  lb.sort((a, b) => b.score - a.score);
+  lb.splice(10); // top 10
+  saveLeaderboard(lb);
+  return lb;
+}
+function renderLeaderboard(el, lb, highlightScore) {
+  if (!lb.length) { el.innerHTML = ''; return; }
+  const medals = ['gold', 'silver', 'bronze'];
+  el.innerHTML = `<div class="lb-title">── LEADERBOARD ──</div>` +
+    lb.map((e, i) => {
+      const cls = medals[i] || (e.score === highlightScore ? 'highlight' : '');
+      return `<div class="lb-row ${cls}">
+        <span class="lb-rank">${i + 1}.</span>
+        <span class="lb-name">${e.name}</span>
+        <span class="lb-score">${e.score}</span>
+      </div>`;
+    }).join('');
+}
+
 // ─── State ───
-let state = 'start'; // start | playing | dead
+let state = 'start'; // start | playing | dead | nameentry
 let bird, pipes, particles, score, frame;
-let highScore = parseInt(localStorage.getItem('flappy-highscore')) || 0;
 let flashTimer = 0;
+const nameScreen    = document.getElementById('name-screen');
+const nameInput     = document.getElementById('name-input');
+const nameScoreEl   = document.getElementById('name-score');
+const nameSubmitBtn = document.getElementById('name-submit');
 
 // ─── Audio ───
 let audioCtx = null;
@@ -163,14 +195,9 @@ function spawnParticles(x, y, color, count = 10) {
 
 // ─── Input ───
 function flap() {
-  if (state === 'start') {
-    startGame();
-    return;
-  }
-  if (state === 'dead') {
-    startGame();
-    return;
-  }
+  if (state === 'nameentry') return;
+  if (state === 'start') { startGame(); return; }
+  if (state === 'dead')  { startGame(); return; }
   if (state === 'playing' && !bird.dead) {
     bird.vy = FLAP_FORCE;
     bird.wingAngle = -0.8;
@@ -201,8 +228,13 @@ function startGame() {
   flashTimer = 0;
   startScreen.classList.add('hidden');
   gameOverScreen.classList.add('hidden');
+  nameScreen.classList.add('hidden');
   scoreDisplay.style.display = 'block';
   scoreDisplay.textContent = '0';
+
+  // Refresh start screen leaderboard
+  const lbPreview = document.getElementById('leaderboard-preview');
+  renderLeaderboard(lbPreview, loadLeaderboard());
 }
 
 // ─── Update ───
@@ -286,19 +318,46 @@ function killBird() {
   playDie();
   spawnParticles(bird.x, bird.y, '#ff4444', 14);
   spawnParticles(bird.x, bird.y, '#ffaa00', 8);
-
-  if (score > highScore) {
-    highScore = score;
-    localStorage.setItem('flappy-highscore', highScore);
-  }
-  finalScoreEl.textContent = 'SCORE: ' + score;
-  highScoreEl.textContent  = 'BEST:  ' + highScore;
   scoreDisplay.style.display = 'none';
 
+  const lb = loadLeaderboard();
+  const isHighScore = lb.length < 10 || score > (lb[lb.length - 1]?.score ?? 0);
+
   setTimeout(() => {
-    gameOverScreen.classList.remove('hidden');
+    if (score > 0 && isHighScore) {
+      // Show name entry
+      state = 'nameentry';
+      nameScoreEl.textContent = 'SCORE: ' + score;
+      nameInput.value = '';
+      nameScreen.classList.remove('hidden');
+      setTimeout(() => nameInput.focus(), 100);
+    } else {
+      showGameOver();
+    }
   }, 900);
 }
+
+function showGameOver() {
+  state = 'dead';
+  finalScoreEl.textContent = 'SCORE: ' + score;
+  const lb = loadLeaderboard();
+  renderLeaderboard(document.getElementById('leaderboard'), lb, score);
+  gameOverScreen.classList.remove('hidden');
+}
+
+// ─── Name submit ───
+function submitName() {
+  const name = nameInput.value.trim() || 'BIRD';
+  const lb = addToLeaderboard(name, score);
+  nameScreen.classList.add('hidden');
+  showGameOver();
+}
+nameSubmitBtn.addEventListener('click', submitName);
+nameSubmitBtn.addEventListener('touchstart', e => { e.preventDefault(); submitName(); }, { passive: false });
+nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitName(); });
+
+// Render leaderboard on start screen immediately
+renderLeaderboard(document.getElementById('leaderboard-preview'), loadLeaderboard());
 
 function updateParticles() {
   for (let i = particles.length - 1; i >= 0; i--) {
